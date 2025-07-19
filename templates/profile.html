@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Profile Details</title>
+  <link rel="stylesheet" href="/static/ahome.css" />
+  <style>
+    body {
+      background: #f8f9fa;
+      font-family: Arial, sans-serif;
+    }
+
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.6);
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 998;
+    }
+
+    .dashbox {
+      position: fixed;
+      z-index: 999;
+      background-color: #e5dcc3;
+      color: black;
+      padding: 30px;
+      width: 500px;
+      border-radius: 10px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .dashbox h2 {
+      background: #d8caa5;
+      padding: 10px;
+      margin-top: 0;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .dashbox .field {
+      margin-bottom: 15px;
+    }
+
+    .dashbox label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .dashbox input,
+    .dashbox textarea {
+      width: 100%;
+      padding: 8px;
+      background: #fefefe;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .dashbox img {
+      max-width: 100px;
+      border-radius: 50%;
+      display: block;
+      margin: 10px auto;
+    }
+
+    .btn-close {
+      background-color: #f8c471;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      display: block;
+      margin: 20px auto 0;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-close:hover {
+      background-color: #e4b657;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="dashbox">
+    <h2>Profile Details</h2>
+
+    {% if user.photo %}
+      <img src="{{ user.photo }}" alt="User Photo">
+    {% endif %}
+
+    <div class="field">
+      <label>Name:</label>
+      <input type="text" value="{{ user.name }}" readonly>
+    </div>
+
+    <div class="field">
+      <label>Email:</label>
+      <input type="text" value="{{ user.mailid }}" readonly>
+    </div>
+
+    <div class="field">
+      <label>Aadhaar No:</label>
+      <input type="text" value="{{ user.aadhhaarno }}" readonly>
+    </div>
+
+    <div class="field">
+      <label>Age:</label>
+      <input type="text" value="{{ user.age }}" readonly>
+    </div>
+
+    <div class="field">
+      <label>Gender:</label>
+      <input type="text" value="{{ user.gender }}" readonly>
+    </div>
+
+    <div class="field">
+      <label>Address:</label>
+      <textarea rows="2" readonly>{{ user.address }}</textarea>
+    </div>
+
+    <button class="btn-close" onclick="window.history.back()">✖ Close</button>
+  </div>
+</body>
+</html>

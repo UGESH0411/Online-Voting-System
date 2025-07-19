@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Edit Candidate</title>
+  <link rel="stylesheet" href="/static/ahome.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+      margin: 0;
+      padding: 0;
+    }
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.6);
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 998;
+    }
+    .dashbox {
+      position: fixed;
+      z-index: 999;
+      background-color: #e5dcc3;
+      color: black;
+      padding: 30px;
+      width: 500px;
+      border-radius: 8px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+    }
+    .dashbox h2 {
+      margin-top: 0;
+      font-size: 20px;
+      background: #d8caa5;
+      padding: 10px;
+    }
+    .dashbox label {
+      display: block;
+      margin: 10px 0 4px;
+    }
+    .dashbox input,
+    .dashbox select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .button-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    .btn-save {
+      background-color: #58d68d;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-close {
+      background-color: #f8c471;
+      color: black;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-save:hover,
+    .btn-close:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="dashbox" role="dialog" aria-modal="true" aria-labelledby="editCandidateTitle">
+    <h2 id="editCandidateTitle">Edit Candidate</h2>
+    <form id="editCandidateForm" enctype="multipart/form-data">
+      <label for="candidateId">Candidate ID</label>
+      <input type="text" id="candidateId" name="id" required readonly>
+
+      <label for="candidateName">Name</label>
+      <input type="text" id="candidateName" name="name" required>
+
+      <label for="candidateParty">Party Name</label>
+      <input type="text" id="candidateParty" name="partyname" required>
+
+      <label for="candidatePosition">Position</label>
+      <select id="candidatePosition" name="position_id" required>
+        <option value="">Select Position</option>
+        <!-- Dynamically populate this via JS or Jinja2 -->
+      </select>
+
+      <label for="candidatePhoto">Photo</label>
+      <input type="file" id="candidatePhoto" name="photo" accept="image/*">
+
+      <div class="button-row">
+        <button type="button" class="btn-close" onclick="window.history.back()">✖ Cancel</button>
+        <button type="submit" class="btn-save">💾 Update</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Prefill form using sessionStorage or Jinja variables
+    window.onload = () => {
+      const candidate = JSON.parse(sessionStorage.getItem("editCandidateData"));
+      const positions = JSON.parse(sessionStorage.getItem("positionList")) || [];
+
+      // Populate position dropdown
+      const positionSelect = document.getElementById("candidatePosition");
+      positions.forEach(pos => {
+        const option = document.createElement("option");
+        option.value = pos.id;
+        option.textContent = pos.positionname;
+        positionSelect.appendChild(option);
+      });
+
+      if (candidate) {
+        document.getElementById("candidateId").value = candidate.id || "";
+        document.getElementById("candidateName").value = candidate.name || "";
+        document.getElementById("candidateParty").value = candidate.partyname || "";
+        document.getElementById("candidatePosition").value = candidate.position_id || "";
+      }
+    };
+
+    document.getElementById("editCandidateForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      try {
+        const response = await fetch("http://localhost:8000/candidates/update", {
+          method: "POST",
+          body: formData
+        });
+        if (response.ok) {
+          alert("Candidate updated successfully!");
+          window.location.href = "/candidatelist";
+        } else {
+          alert("Failed to update candidate.");
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

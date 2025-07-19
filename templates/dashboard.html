@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: #f4ebcd;
+            color: #333;
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .card a {
+            color: white;
+            text-decoration: underline;
+            font-size: 14px;
+        }
+
+        .card.blue { background-color: #2196f3; }
+        .card.orange { background-color: #ff9800; }
+        .card.brown { background-color: #795548; }
+        .card.dark-blue { background-color: #0d47a1; }
+
+        .votes-tally {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        }
+
+        .votes-tally h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .chart-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+        }
+
+        .chart-box h3 {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .print-btn {
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #1d3557;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .print-btn:hover {
+            background-color: #457b9d;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <header>
+            <h1>Dashboard</h1>
+            <p><a href="javascript:history.back()">Home</a> > Dashboard</p>
+        </header>
+
+        <div class="summary-cards">
+            <div class="card blue">
+                <h3>{{ positions_count }}</h3>
+                <p>No. of Positions</p>
+         
+            </div>
+            <div class="card orange">
+                <h3>{{ candidates_count }}</h3>
+                <p>No. of Candidates</p>
+             
+            </div>
+            <div class="card brown">
+                <h3>{{ total_voters }}</h3>
+                <p>Total Voters</p>
+                
+            </div>
+            <div class="card dark-blue">
+                <h3>{{ voters_voted }}</h3>
+                <p>Voters Voted</p>
+       
+            </div>
+        </div>
+
+        <div class="votes-tally">
+            <h2>VOTES TALLY</h2>
+            <div class="chart-container">
+                {% for position in positions %}
+                <div class="chart-box">
+                    <h3>{{ position }}</h3>
+                    <canvas id="chart-{{ loop.index }}"></canvas>
+                </div>
+                {% endfor %}
+            </div>
+            <button class="print-btn" onclick="window.print()">Print</button>
+        </div>
+    </div>
+
+    <script>
+        const chartData = {{ chart_data | tojson }};
+
+        Object.entries(chartData).forEach(([position, data], index) => {
+            const ctx = document.getElementById(`chart-${index + 1}`).getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Votes',
+                        data: data.votes,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Edit Voter</title>
+  <link rel="stylesheet" href="/static/ahome.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+      margin: 0;
+      padding: 0;
+    }
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.6);
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 998;
+    }
+    .dashbox {
+      position: fixed;
+      z-index: 999;
+      background-color: #e5dcc3;
+      color: black;
+      padding: 30px;
+      width: 500px;
+      border-radius: 8px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+    }
+    .dashbox h2 {
+      margin-top: 0;
+      font-size: 20px;
+      background: #d8caa5;
+      padding: 10px;
+    }
+    .dashbox label {
+      display: block;
+      margin: 10px 0 4px;
+    }
+    .dashbox input,
+    .dashbox select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .button-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    .btn-save {
+      background-color: #58d68d;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-close {
+      background-color: #f8c471;
+      color: black;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-save:hover,
+    .btn-close:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay"></div>
+
+  <div class="dashbox" role="dialog" aria-modal="true" aria-labelledby="editVoterTitle">
+    <h2 id="editVoterTitle">Edit Voter</h2>
+    <form id="editVoterForm" enctype="multipart/form-data">
+      <label for="voterAadhaarNo">Aadhaar No</label>
+      <input type="text" id="voterAadhaarNo" name="aadhhaarno" maxlength="12" required readonly>
+
+      <label for="voterName">Name</label>
+      <input type="text" id="voterName" name="name" required>
+
+      <label for="voterEmail">Email</label>
+      <input type="email" id="voterEmail" name="mailid" required>
+
+      <label for="voterPassword">Password</label>
+      <input type="password" id="voterPassword" name="password" required>
+
+      <label for="voterAge">Age</label>
+      <input type="number" id="voterAge" name="age" required>
+
+      <label for="voterAddress">Address</label>
+      <input type="text" id="voterAddress" name="address" required>
+
+      <label for="voterGender">Gender</label>
+      <select id="voterGender" name="gender" required>
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label for="voterPhoto">Photo</label>
+      <input type="file" id="voterPhoto" name="photo" accept="image/*">
+
+      <div class="button-row">
+        <button type="button" class="btn-close" onclick="window.history.back()">✖ Cancel</button>
+        <button type="submit" class="btn-save">💾 Update</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Prefill form using voter data (can be rendered using Jinja2 or fetched)
+    window.onload = () => {
+      const voter = JSON.parse(sessionStorage.getItem("editVoterData")); // Or render server-side
+      if (voter) {
+        document.getElementById("voterAadhaarNo").value = voter.aadhhaarno || "";
+        document.getElementById("voterName").value = voter.name || "";
+        document.getElementById("voterEmail").value = voter.mailid || "";
+        document.getElementById("voterPassword").value = voter.password || "";
+        document.getElementById("voterAge").value = voter.age || "";
+        document.getElementById("voterAddress").value = voter.address || "";
+        document.getElementById("voterGender").value = voter.gender || "";
+      }
+    };
+
+    document.getElementById("editVoterForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      try {
+        const response = await fetch("http://localhost:8000/voters/update", {
+          method: "POST",
+          body: formData
+        });
+        if (response.ok) {
+          alert("Voter updated successfully!");
+          window.location.href = "/voterlist";
+        } else {
+          alert("Failed to update voter.");
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>

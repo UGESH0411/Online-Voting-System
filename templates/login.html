@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="/static/lstyle.css">
+</head>
+<body>
+    <div class="login-container">
+        <center><h1>🔓</h1></center>
+        <h2>Login</h2>
+
+        <form action="/login" method="post" id="loginForm">
+            <input type="text" placeholder="Username" id="Username" name="username" required>
+            <br><br>
+            <input type="password" placeholder="Password" id="Password" name="password" required>
+            <br><br>
+            <input type="hidden" name="role" id="roleInput" value="user">
+            <input type="submit" id="Usersubmit" value="Login as User" onclick="document.getElementById('roleInput').value='user'">
+            <br><br>
+            <input type="submit" id="Adminsubmit" value="Login as Admin" onclick="document.getElementById('roleInput').value='admin'">
+        </form>
+
+    </div>
+</body>
+</html>

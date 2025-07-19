@@ -1,0 +1,124 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #f4ebcd;
+}
+
+#togglebtn {
+    display: none;
+    visibility: hidden;
+}
+.toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  height: 30px;
+  width: 30px;
+  background-color: #fff;
+  z-index: 9999;
+  cursor: pointer;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.toggle .common {
+  position: absolute;
+  height: 2px;
+  width: 20px;
+  background-color: #8000ff;
+  border-radius: 50px;
+  transition: 0.3s ease;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.toggle .top_line {
+  top: 30%;
+}
+
+.toggle .mid_line {
+  top: 50%;
+}
+
+.toggle .bottom_line {
+  top: 70%;
+}
+
+
+.top {
+    background-color: #6b6e73;
+    width: 100%;
+    height: 68px;
+}
+
+.top h1 {
+    padding: 15px;
+    position: absolute;
+    left: 12%;
+    color: #fff;
+}
+
+.menubar {
+    background-color: #b1b3b5;
+    width: 180px;
+    transform: translate(-180px);
+    color: aliceblue;
+    transition: 0.5s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: auto;
+
+    
+}
+
+.menubar nav {
+    background-color: black;
+}
+
+.menubar h1 {
+    padding: 10px;
+    font-weight: 800;
+    margin-top: 8px;
+    margin-left: 50px;
+    color: whitesmoke;
+    pointer-events: none;
+}
+
+.menubar h3 {
+    padding: 15px;
+    font-weight: bold;
+}
+
+ul {
+    padding: 0;
+    margin: 0;
+}
+
+ul li {
+    list-style: none;
+    padding: 20px;
+    background-color: #524653;
+}
+
+ul li a {
+    font-weight: 500;
+    padding: 5px;
+    display: block;
+    text-decoration: none;
+    color: white;
+    transition: 0.2s ease-out;
+}
+ul li  a:hover{
+    background-color: white;
+    color: #524653;
+}
+input#togglebtn:checked ~ .menubar {
+  transform: translate(0px);
+  box-shadow: 0 0 15px rgb(0,0,0,0.5);
+}
