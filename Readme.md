@@ -155,7 +155,4 @@ Developed by **\[Ugesh K]**
     GitHub: [Ugesh K](https://github.com/UGESH0411)
     LinkedIn: \[https://www.linkedin.com/in/ugesh04/]
 
-##  License
-
-This project is open-source under the **MIT License**.
 
