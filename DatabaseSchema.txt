@@ -1,0 +1,61 @@
+-- =============================
+-- 1. Admins Table
+-- =============================
+CREATE TABLE admin (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL, -- hash this in production!
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================
+-- 2. Voters Table
+-- =============================
+CREATE TABLE voters (
+    id SERIAL PRIMARY KEY,
+    aadhhaarno VARCHAR(20) UNIQUE NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    mailid VARCHAR(150) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL, -- hash this too
+    age INT CHECK (age >= 18), -- only 18+ allowed
+    address TEXT,
+    gender VARCHAR(10) CHECK (gender IN ('Male','Female','Other')),
+    photo TEXT, -- path to uploaded photo
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================
+-- 3. Positions Table (elections)
+-- =============================
+CREATE TABLE position (
+    id SERIAL PRIMARY KEY,
+    positionname VARCHAR(150) UNIQUE NOT NULL, -- eg. "President", "Secretary"
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================
+-- 4. Candidates Table
+-- =============================
+CREATE TABLE candidates (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    position_id INT NOT NULL REFERENCES position(id) ON DELETE CASCADE,
+    party VARCHAR(100),
+    symbol TEXT, -- file path for party symbol image
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (name, position_id) -- one candidate per position
+);
+
+-- =============================
+-- 5. Votes Table
+-- =============================
+CREATE TABLE votes (
+    id SERIAL PRIMARY KEY,
+    voter_id INT NOT NULL REFERENCES voters(id) ON DELETE CASCADE,
+    candidate_id INT NOT NULL REFERENCES candidates(id) ON DELETE CASCADE,
+    position_id INT NOT NULL REFERENCES position(id) ON DELETE CASCADE,
+    voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (voter_id, position_id) -- voter can vote only once per position
+);
