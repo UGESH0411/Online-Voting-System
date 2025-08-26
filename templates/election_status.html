@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Election Status</title>
+    <link rel="stylesheet" href="/static/status_style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>📅 Election Status Overview</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Status</th>
+                <th>Time Info</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for election in status_list %}
+            <tr>
+                <td>{{ election.positionname }}</td>
+                <td>{{ election.start_time }}</td>
+                <td>{{ election.end_time }}</td>
+                <td>
+                    {% if election.status == "Ongoing" %}
+                        <span style="color: green; font-weight: bold;">🟢 {{ election.status }}</span>
+                    {% elif election.status == "Upcoming" %}
+                        <span style="color: blue; font-weight: bold;">🔵 {{ election.status }}</span>
+                    {% elif election.status == "Ended" %}
+                        <span style="color: red; font-weight: bold;">🔴 {{ election.status }}</span>
+                    {% else %}
+                        {{ election.status }}
+                    {% endif %}
+                </td>
+                <td>{{ election.time_info }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="javascript:history.back()" class="button">⬅️ Back to Home</a>
+</div>
+
+</body>
+</html>

@@ -77,7 +77,6 @@ body {
     
 }
 
-
 .menubar nav {
     background-color: black;
 }
@@ -123,6 +122,8 @@ input#togglebtn:checked ~ .menubar {
   transform: translate(0px);
   box-shadow: 0 0 15px rgb(0,0,0,0.5);
 }
+
+
 .overlay {
       background-color: rgba(0, 0, 0, 0.6);
       position: fixed;
@@ -146,6 +147,9 @@ input#togglebtn:checked ~ .menubar {
       transform: translate(-50%, -50%);
       display: none;
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+      max-height: 90vh;
+      overflow-y: auto;
+
     }
     .dashbox h2 {
       margin-top: 0;
@@ -158,23 +162,6 @@ input#togglebtn:checked ~ .menubar {
       display: block;
       margin: 10px 0 4px;
     }
-    .logout {
-  background-color: #e74c3c;
-  color: white;
-  padding: 6px 12px;
-  border-radius: 5px;
-  margin-top: 10px;
-  right:3%;
-  position: absolute;
-  text-decoration: none;
-  font-weight: bold;
-  transition: background-color 0.3s ease;
-}
-
-.logout:hover {
-  background-color: #ffff;
-  color: #c0392b;
-}
     .dashbox input,
     .dashbox select {
       width: 100%;
@@ -196,7 +183,7 @@ input#togglebtn:checked ~ .menubar {
       cursor: pointer;
     }
     .btn-close {
-      background-color: #fff;
+      background-color: #f8c471;
       color: black;
       border: none;
       padding: 8px 16px;
@@ -242,7 +229,7 @@ input#togglebtn:checked ~ .menubar {
       height: 50px;
     }
   .vote-box {
-  background-color: #e6dfc6;
+  background-color: #fff;
   border-radius: 8px;
   padding: 20px;
   margin-right: 3%;
@@ -331,7 +318,23 @@ input#togglebtn:checked ~ .menubar {
   border-radius: 8px;
   cursor: pointer;
 }
+.logout {
+  background-color: #e74c3c;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 5px;
+  margin-top: 10px;
+  right:3%;
+  position: absolute;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
 
+.logout:hover {
+  background-color: #ffff;
+  color: #c0392b;
+}
 .submit-vote:hover,
 .platform-btn:hover,
 .reset-btn:hover {

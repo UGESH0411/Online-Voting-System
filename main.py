@@ -1,20 +1,20 @@
 from fastapi import FastAPI, Form, Request, UploadFile, File, Response, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from fastapi import Path  # ensure this is imported if not already
+from fastapi import Path  
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from datetime import datetime
 import shutil
 import os
-from collections import defaultdict  # Add this import if not already present
+from collections import defaultdict  
 import time
 from fastapi.responses import PlainTextResponse
 
 app = FastAPI()
 
-# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,11 +22,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Templates and Static Files
+
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# PostgreSQL DB Connection
+
 while True:
     try:
         con = psycopg2.connect(
@@ -82,53 +82,142 @@ async def login(response: Response, request: Request, username: str = Form(...),
         con.rollback()
         return HTMLResponse(f"<h3>⚠️ Login Error: {str(e)}</h3>")
 
-
 @app.get("/adminhome", response_class=HTMLResponse)
 async def admin_home(request: Request, username: str = Cookie(default=None)):
+    if username is None:
+        return RedirectResponse("/", status_code=302)
+
     try:
+        current_time = datetime.now()
+
+        # ✅ Fetch only ongoing positions (same as userhome)
         with con.cursor() as cur:
             cur.execute("""
-                SELECT c.id, c.name, c.party, c.symbol, c.position_id, p.positionname
+                SELECT id, positionname, start_time, end_time
+                FROM position
+                WHERE start_time <= %s AND end_time >= %s
+            """, (current_time, current_time))
+            ongoing_positions = cur.fetchall()
+
+        positions = {}
+        for pos in ongoing_positions:
+            start_time = pos["start_time"]
+            end_time = pos["end_time"]
+
+            positions[pos["positionname"]] = {
+                "candidates": [],
+                "start_time": start_time.isoformat() if start_time else None,
+                "end_time": end_time.isoformat() if end_time else None
+            }
+
+
+        with con.cursor() as cur:
+            cur.execute("""
+                SELECT c.id, c.name, c.party, c.symbol, p.positionname
                 FROM candidates c
                 JOIN position p ON c.position_id = p.id
-            """)
+                WHERE p.start_time <= %s AND p.end_time >= %s
+            """, (current_time, current_time))
             all_candidates = cur.fetchall()
 
-        # Group candidates by position
-        positions = defaultdict(list)
         for c in all_candidates:
-            positions[c["positionname"]].append(c)
+            pos_name = c["positionname"]
+            if pos_name in positions:
+                positions[pos_name]["candidates"].append(c)
 
-        return templates.TemplateResponse("adminhome.html", {
+        response = templates.TemplateResponse("adminhome.html", {
             "request": request,
             "username": username,
-            "positions": positions,
-            "voter_id": 1  # Replace with dynamic voter ID when needed
+            "positions": positions
         })
+
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
     except Exception as e:
         return HTMLResponse(f"<h3>⚠️ Error loading admin home: {str(e)}</h3>")
 
+@app.get("/userhome", response_class=HTMLResponse)
+async def user_home(request: Request, username: str = Cookie(default=None)):
+    if username is None:
+        return RedirectResponse("/", status_code=302)
+
+    try:
+        current_time = datetime.now()
+
+        # ✅ Step 1: Fetch only ongoing positions (SQL filtered)
+        with con.cursor() as cur:
+            cur.execute("""
+                SELECT id, positionname, start_time, end_time
+                FROM position
+                WHERE start_time <= %s AND end_time >= %s
+            """, (current_time, current_time))
+            ongoing_positions = cur.fetchall()
+
+        # ✅ Step 2: Build positions dictionary (only ongoing)
+        positions = {}
+        for pos in ongoing_positions:
+            start_time = pos["start_time"]
+            end_time = pos["end_time"]
+
+            positions[pos["positionname"]] = {
+                "candidates": [],
+                "start_time": start_time.isoformat() if start_time else None,
+                "end_time": end_time.isoformat() if end_time else None
+            }
+
+        # ✅ Step 3: Fetch candidates and attach to ongoing positions
+        with con.cursor() as cur:
+            cur.execute("""
+                SELECT c.id, c.name, c.party, c.symbol, p.positionname
+                FROM candidates c
+                JOIN position p ON c.position_id = p.id
+                WHERE p.start_time <= %s AND p.end_time >= %s
+            """, (current_time, current_time))
+            all_candidates = cur.fetchall()
+
+        for c in all_candidates:
+            pos_name = c["positionname"]
+            if pos_name in positions:
+                positions[pos_name]["candidates"].append(c)
+
+        # ✅ Step 4: Render Template
+        response = templates.TemplateResponse("userhome.html", {
+            "request": request,
+            "username": username,
+            "positions": positions
+        })
+
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+    except Exception as e:
+        return HTMLResponse(f"<h3>⚠️ Error loading user home: {str(e)}</h3>")
 
 
 @app.post("/submit-vote")
 async def submit_vote(request: Request, username: str = Cookie(default=None)):
     try:
-        # ✅ Get voter_id using username
         with con.cursor() as cur:
             cur.execute("SELECT id FROM voters WHERE name = %s", (username,))
             voter = cur.fetchone()
             if not voter:
                 return PlainTextResponse("❌ Voter not found. Please login again.")
-
             voter_id = voter["id"]
 
-        # ✅ Read form data
         form = await request.form()
         position_name = form.get("position")
-        candidate_id = int(form.get("candidate"))
+
+        candidate_id = form.get("candidate")
+        if not candidate_id:
+            return PlainTextResponse("❌ No candidate selected.")
+        candidate_id = int(candidate_id)
 
         with con.cursor() as cur:
-            # ✅ Get position_id from candidate
             cur.execute("SELECT position_id FROM candidates WHERE id = %s", (candidate_id,))
             pos_result = cur.fetchone()
             if not pos_result:
@@ -136,20 +225,14 @@ async def submit_vote(request: Request, username: str = Cookie(default=None)):
 
             position_id = pos_result["position_id"]
 
-            # ✅ Check for duplicate vote
-            cur.execute(
-                "SELECT id FROM votes WHERE voter_id = %s AND position_id = %s",
-                (voter_id, position_id)
-            )
+            cur.execute("SELECT id FROM votes WHERE voter_id = %s AND position_id = %s",
+                        (voter_id, position_id))
             existing_vote = cur.fetchone()
             if existing_vote:
                 return PlainTextResponse("❌ You have already voted for this position.")
 
-            # ✅ Insert vote
-            cur.execute(
-                "INSERT INTO votes (voter_id, candidate_id, position_id) VALUES (%s, %s, %s)",
-                (voter_id, candidate_id, position_id)
-            )
+            cur.execute("INSERT INTO votes (voter_id, candidate_id, position_id) VALUES (%s, %s, %s)",
+                        (voter_id, candidate_id, position_id))
             con.commit()
 
         return PlainTextResponse("✅ Your vote has been recorded successfully.")
@@ -157,32 +240,62 @@ async def submit_vote(request: Request, username: str = Cookie(default=None)):
     except Exception as e:
         con.rollback()
         return PlainTextResponse(f"❌ Error submitting vote: {str(e)}")
-    
-@app.get("/userhome", response_class=HTMLResponse)
-async def admin_home(request: Request, username: str = Cookie(default=None)):
+
+
+@app.get("/electionstatus", response_class=HTMLResponse)
+async def election_status_page(request: Request):
     try:
+        now = datetime.now()
+
         with con.cursor() as cur:
             cur.execute("""
-                SELECT c.id, c.name, c.party, c.symbol, c.position_id, p.positionname
-                FROM candidates c
-                JOIN position p ON c.position_id = p.id
+                SELECT 
+                    positionname, 
+                    start_time, 
+                    end_time
+                FROM position
+                ORDER BY start_time
             """)
-            all_candidates = cur.fetchall()
+            elections = cur.fetchall()
 
-        # Group candidates by position
-        positions = defaultdict(list)
-        for c in all_candidates:
-            positions[c["positionname"]].append(c)
+        status_list = []
+        for election in elections:
+            start = election["start_time"]
+            end = election["end_time"]
 
-        return templates.TemplateResponse("userhome.html", {
+            if start is None or end is None:
+                status = "⏳ Schedule Unknown"
+                time_info = "-"
+            elif now < start:
+                status = "Upcoming"
+                remaining = start - now
+                time_info = f"Starts in {remaining.days} days {remaining.seconds//3600} hours"
+            elif start <= now <= end:
+                status = "Ongoing"
+                remaining = end - now
+                time_info = f"{remaining.days} days {remaining.seconds//3600} hours left"
+            else:
+                status = "Ended"
+                time_info = "Completed"
+
+            status_list.append({
+                "positionname": election["positionname"],
+                "start_time": start.strftime("%Y-%m-%d %H:%M") if start else "-",
+                "end_time": end.strftime("%Y-%m-%d %H:%M") if end else "-",
+                "status": status,
+                "time_info": time_info
+            })
+
+        return templates.TemplateResponse("election_status.html", {
             "request": request,
-            "username": username,
-            "positions": positions,
-            "voter_id": 1  # Replace with dynamic voter ID when needed
+            "status_list": status_list
         })
+
     except Exception as e:
-        return HTMLResponse(f"<h3>⚠️ Error loading admin home: {str(e)}</h3>")
-    
+        return HTMLResponse(f"<h3>⚠️ Error fetching election status: {str(e)}</h3>")
+
+
+
 @app.post("/candidates")
 async def add_candidate(
     firstname: str = Form(...),
@@ -192,34 +305,39 @@ async def add_candidate(
     symbol: UploadFile = File(...)
 ):
     try:
-       # print("Received form:", firstname, lastname, position, party, symbol.filename)
-
-        symbol_path = f"static/uploads/candidates/{symbol.filename}"
-        os.makedirs(os.path.dirname(symbol_path), exist_ok=True)
-        with open(symbol_path, "wb") as buffer:
-            shutil.copyfileobj(symbol.file, buffer)
-
         fullname = f"{firstname} {lastname}"
+
         with con.cursor() as cur:
-            print("Looking up position:", position)
+            # Lookup position
             cur.execute("SELECT id FROM position WHERE LOWER(positionname) = LOWER(%s)", (position,))
             result = cur.fetchone()
-            print("Position lookup result:", result)
-
             if result is None:
                 return {"error": f"❌ Position '{position}' does not exist."}
-            position_id = result['id']  # using dict cursor
+            position_id = result['id']
 
+            # Check if candidate already exists for this position
+            cur.execute("SELECT * FROM candidates WHERE LOWER(name) = LOWER(%s) AND position_id = %s", (fullname, position_id))
+            existing_candidate = cur.fetchone()
+            if existing_candidate:
+                return {"message": "❌ Candidate is already present for this position"}
+
+            # Save the symbol
+            symbol_path = f"static/uploads/candidates/{symbol.filename}"
+            os.makedirs(os.path.dirname(symbol_path), exist_ok=True)
+            with open(symbol_path, "wb") as buffer:
+                shutil.copyfileobj(symbol.file, buffer)
+
+            # Insert candidate
             cur.execute("""
                 INSERT INTO candidates (name, position_id, party, symbol)
                 VALUES (%s, %s, %s, %s)
             """, (fullname, position_id, party, symbol_path))
             con.commit()
-            print("✅ Candidate inserted:", fullname)
+
         return {"message": "✅ Candidate added successfully"}
+
     except Exception as e:
         con.rollback()
-        print("❌ Exception occurred while inserting candidate:", e)
         return {"error": f"❌ Failed to add candidate: {str(e)}"}
 
 
@@ -235,18 +353,25 @@ async def add_voter(
     photo: UploadFile = File(...)
 ):
     try:
-        photo_path = f"static/uploads/voters/{photo.filename}"
-        os.makedirs(os.path.dirname(photo_path), exist_ok=True)
-        with open(photo_path, "wb") as buffer:
-            shutil.copyfileobj(photo.file, buffer)
-
         with con.cursor() as cur:
+            cur.execute("SELECT * FROM voters WHERE aadhhaarno = %s", (aadhhaarno,))
+            existing_voter = cur.fetchone()
+            if existing_voter:
+                return {"message": "❌ Voter is already present"}
+
+            photo_path = f"static/uploads/voters/{photo.filename}"
+            os.makedirs(os.path.dirname(photo_path), exist_ok=True)
+            with open(photo_path, "wb") as buffer:
+                shutil.copyfileobj(photo.file, buffer)
+
             cur.execute("""
                 INSERT INTO voters (aadhhaarno, name, mailid, password, age, address, gender, photo)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (aadhhaarno, name, mailid, password, age, address, gender, photo_path))
             con.commit()
+
         return {"message": "✅ Voter added successfully"}
+
     except Exception as e:
         con.rollback()
         return {"error": f"❌ Failed to add voter: {str(e)}"}
@@ -376,34 +501,50 @@ async def edit_candidate_page(request: Request, candidate_id: int):
     except Exception as e:
         return HTMLResponse(f"<h3>Error loading edit form: {str(e)}</h3>")
 
-
 @app.post("/candidate/edit/{candidate_id}")
 async def update_candidate(
     candidate_id: int,
     name: str = Form(...),
-    position: str = Form(...),
+    position: str = Form(...),  # this will be position NAME from form
     party: str = Form(...),
     symbol: UploadFile = File(None)
 ):
     try:
         with con.cursor() as cur:
+            # 🔎 Lookup position_id from position name
+            cur.execute("SELECT id FROM position WHERE LOWER(positionname) = LOWER(%s)", (position,))
+            pos_row = cur.fetchone()
+            if not pos_row:
+                return HTMLResponse(f"<h3>❌ Position '{position}' not found in DB</h3>")
+            position_id = pos_row["id"]
+
+            # 📷 Handle file upload if symbol provided
             if symbol:
                 symbol_path = f"static/uploads/candidates/{symbol.filename}"
                 os.makedirs(os.path.dirname(symbol_path), exist_ok=True)
                 with open(symbol_path, "wb") as buffer:
                     shutil.copyfileobj(symbol.file, buffer)
+
                 cur.execute("""
-                    UPDATE candidates SET name = %s, position = %s, party = %s, symbol = %s WHERE id = %s
-                """, (name, position, party, symbol_path, candidate_id))
+                    UPDATE candidates
+                    SET name = %s, position_id = %s, party = %s, symbol = %s
+                    WHERE id = %s
+                """, (name, position_id, party, symbol_path, candidate_id))
             else:
                 cur.execute("""
-                    UPDATE candidates SET name = %s, position = %s, party = %s WHERE id = %s
-                """, (name, position, party, candidate_id))
+                    UPDATE candidates
+                    SET name = %s, position_id = %s, party = %s
+                    WHERE id = %s
+                """, (name, position_id, party, candidate_id))
+
             con.commit()
+
         return RedirectResponse(url="/candidatelist", status_code=302)
+
     except Exception as e:
         con.rollback()
         return HTMLResponse(f"<h3>Failed to update candidate: {str(e)}</h3>")
+
 
 
 @app.get("/candidate/delete/{candidate_id}")
@@ -447,13 +588,14 @@ async def dashboard(request: Request):
             """)
             results = cur.fetchall()
 
-            tally = defaultdict(lambda: {"labels": [], "votes": []})
+            tally = defaultdict(lambda: {"labels": [], "votes": [], "total_votes": 0})
             for row in results:
                 position = row["positionname"]
-                tally[position]["labels"].append(row["candidate_name"])
-                tally[position]["votes"].append(row["vote_count"])
+                vote_count = row["vote_count"]
 
-            # Structure to pass to Chart.js
+                tally[position]["labels"].append(row["candidate_name"])
+                tally[position]["votes"].append(vote_count)
+                tally[position]["total_votes"] += vote_count
             chart_data = dict(tally)
 
         return templates.TemplateResponse("dashboard.html", {

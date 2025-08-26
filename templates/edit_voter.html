@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Edit Voter</title>
-  <link rel="stylesheet" href="/static/ahome.css" />
+  
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -83,9 +83,9 @@
 
   <div class="dashbox" role="dialog" aria-modal="true" aria-labelledby="editVoterTitle">
     <h2 id="editVoterTitle">Edit Voter</h2>
-    <form id="editVoterForm" enctype="multipart/form-data">
+    <form id="editVoterForm" enctype="multipart/form-data" >
       <label for="voterAadhaarNo">Aadhaar No</label>
-      <input type="text" id="voterAadhaarNo" name="aadhhaarno" maxlength="12" required readonly>
+      <input type="text" name="aadhhaarno" value="{{ voter.aadhhaarno }}" required><br>
 
       <label for="voterName">Name</label>
       <input type="text" id="voterName" name="name" required>
@@ -139,10 +139,12 @@
       e.preventDefault();
       const formData = new FormData(this);
       try {
-        const response = await fetch("http://localhost:8000/voters/update", {
-          method: "POST",
-          body: formData
-        });
+        const voterId = "{{ voter.id }}"; // Injected from backend
+        const response = await fetch(`/voter/edit/${voterId}`, {
+        method: "POST",
+        body: formData
+      });
+
         if (response.ok) {
           alert("Voter updated successfully!");
           window.location.href = "/voterlist";

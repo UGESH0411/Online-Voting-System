@@ -141,54 +141,51 @@
                 <p>Total Voters</p>
                 
             </div>
-            <div class="card dark-blue">
-                <h3>{{ voters_voted }}</h3>
-                <p>Voters Voted</p>
-       
-            </div>
         </div>
 
         <div class="votes-tally">
             <h2>VOTES TALLY</h2>
             <div class="chart-container">
-                {% for position in positions %}
-                <div class="chart-box">
-                    <h3>{{ position }}</h3>
-                    <canvas id="chart-{{ loop.index }}"></canvas>
-                </div>
-                {% endfor %}
-            </div>
+    {% for position in positions %}
+    <div class="chart-box">
+        <h3>{{ position }}</h3>
+        <canvas id="chart-{{ loop.index }}"></canvas>
+        <p style="text-align:center; margin-top:10px; font-weight:bold;">
+            Total Voters for {{ position }}: {{ chart_data[position]['total_votes'] }}
+        </p>
+    </div>
+    {% endfor %}
+</div>
+
             <button class="print-btn" onclick="window.print()">Print</button>
         </div>
     </div>
 
     <script>
-        const chartData = {{ chart_data | tojson }};
+  const chartData = {{ chart_data | tojson }};
+  const positions = {{ positions | tojson }};
 
-        Object.entries(chartData).forEach(([position, data], index) => {
-            const ctx = document.getElementById(`chart-${index + 1}`).getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'Votes',
-                        data: data.votes,
-                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: { beginAtZero: true }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
-                }
-            });
-        });
+  positions.forEach((position, index) => {
+    const ctx = document.getElementById(`chart-${index + 1}`).getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: chartData[position]["labels"],
+        datasets: [{
+          label: position,
+          data: chartData[position]["votes"],
+          backgroundColor: ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2"]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          title: { display: true, text: position }
+        }
+      }
+    });
+  });
     </script>
 </body>
 </html>
